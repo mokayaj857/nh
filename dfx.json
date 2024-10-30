@@ -1,0 +1,27 @@
+{
+  "canisters": {
+    "forge_backend": {
+      "candid": "src/forge_backend/forge_backend.did",
+      "package": "forge_backend",
+      "type": "rust"
+    },
+    "forge_frontend": {
+      "dependencies": [
+        "forge_backend"
+      ],
+      "source": [
+        "src/forge_frontend/dist"
+      ],
+      "type": "assets",
+      "workspace": "forge_frontend"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
