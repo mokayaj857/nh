@@ -1,3 +1,2 @@
-service : {
-    "greet": (text) -> (text) query;
-}
+type BitcoinNetwork = variant { mainnet; regtest; testnet };
+service : (BitcoinNetwork) -> { get_p2pkh_address : () -> (text) }
