@@ -2,7 +2,7 @@ use ::bitcoin::Network;
 use candid::{CandidType, Deserialize};
 use ic_cdk::api::management_canister::bitcoin::{
     bitcoin_get_balance, bitcoin_get_utxos, BitcoinNetwork, GetBalanceRequest, GetUtxosRequest,
-    GetUtxosResponse, MillisatoshiPerByte,
+    GetUtxosResponse, MillisatoshiPerByte, Satoshi,
 };
 
 use ic_cdk::{init, update};
@@ -22,6 +22,11 @@ thread_local! {
 
 
     static KEY_NAME: RefCell<String> = RefCell::new(String::from(""));
+}
+#[derive(CandidType, Debug, Deserialize, PartialEq, Eq)]
+pub struct SendRequest {
+    destination_address: String,
+    amount_in_satoshi: Satoshi,
 }
 #[init]
 pub fn init(network: BitcoinNetwork) {
@@ -75,6 +80,22 @@ pub async fn _get_utxos(network: BitcoinNetwork, address: String) -> GetUtxosRes
     .await;
 
     utxos_res.unwrap().0
+}
+#[update]
+pub async fn send_from_p2pkh(request: SendRequest) -> String {
+    let derivation_path = DERIVATION_PATH.with(|d| d.clone());
+    let network = NETWORK.with(|n| n.get());
+    let key_name = KEY_NAME.with(|kn| kn.borrow().to_string());
+    let tx_id = wallet::send(
+        network,
+        derivation_path,
+        key_name,
+        request.destination_address,
+        request.amount_in_satoshi,
+    )
+    .await;
+
+    tx_id.to_string()
 }
 
 ic_cdk::export_candid!();
