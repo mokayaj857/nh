@@ -9,7 +9,8 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-bitcoin = "0.32.4"
+bitcoin = "0.30.2"
 candid = "0.10"
+hex = "0.4.3"
 ic-cdk = "0.16"
 ic-cdk-timers = "0.10" # Feel free to remove this dependency if you don't need timers
