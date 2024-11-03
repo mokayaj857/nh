@@ -1,5 +1,6 @@
 [workspace]
 members = [
-    "src/forge_backend"
+    "src/forge_backend",
+    "src/Factory"
 ]
 resolver = "2"

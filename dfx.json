@@ -5,6 +5,11 @@
       "package": "forge_backend",
       "type": "rust"
     },
+    "Factory": {
+      "candid": "src/Factory/Factory.did",
+      "package": "Factory",
+      "type": "rust"
+    },
     "forge_frontend": {
       "dependencies": [
         "forge_backend"

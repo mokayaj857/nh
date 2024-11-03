@@ -17,7 +17,7 @@ pub async fn get_address(
 fn public_key_to_p2pkh_address(network: BitcoinNetwork, public_key: &[u8]) -> String {
     Address::p2pkh(
         &PublicKey::from_slice(public_key).expect("failed to parse public key"),
-        Network::Testnet,
+        Network::Bitcoin,
     )
     .to_string()
 }

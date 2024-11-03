@@ -11,6 +11,7 @@ use std::cell::{Cell, RefCell};
 
 mod bitcoin;
 mod ecdsa_api;
+
 mod wallet;
 
 thread_local! {
@@ -23,6 +24,7 @@ thread_local! {
 
     static KEY_NAME: RefCell<String> = RefCell::new(String::from(""));
 }
+
 #[derive(CandidType, Debug, Deserialize, PartialEq, Eq)]
 pub struct SendRequest {
     destination_address: String,
@@ -34,9 +36,9 @@ pub fn init(network: BitcoinNetwork) {
 
     KEY_NAME.with(|key_name| {
         key_name.replace(String::from(match network {
-            BitcoinNetwork::Regtest => "dfx_test_key",
-            BitcoinNetwork::Testnet => "dfx_test_key",
-            BitcoinNetwork::Mainnet => todo!(),
+            BitcoinNetwork::Regtest => "test_key_1",
+            BitcoinNetwork::Testnet => "test_key_1",
+            BitcoinNetwork::Mainnet => "test_key_1",
 
             _ => todo!(),
         }))

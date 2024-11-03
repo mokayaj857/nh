@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 function generate_did() {
   local canister=$1
   canister_root="src/$canister"
@@ -12,7 +11,7 @@ function generate_did() {
   candid-extractor "target/wasm32-unknown-unknown/release/$canister.wasm" > "$canister_root/$canister.did"
 }
 
-CANISTERS=forge_backend
+CANISTERS="forge_backend,Factory"
 
 for canister in $(echo $CANISTERS | sed "s/,/ /g")
 do

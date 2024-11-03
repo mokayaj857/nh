@@ -1,0 +1,4 @@
+type BitcoinNetwork = variant { mainnet; regtest; testnet };
+type CustomError = variant { custom : text; MissingField : text };
+type Result = variant { Ok : principal; Err : CustomError };
+service : { create_btc_holder : (BitcoinNetwork) -> (Result) }
