@@ -14,13 +14,12 @@ const Navigation = (props) => {
 
   return (
     <div className={classes.navigation}>
-      <button
-        // className=
-        // {
-        //   poolStatus === 'default'
-        //     ? classes.buttonActive
-        //     : classes.buttonNonActive
-        // }
+         <button
+        className={
+          poolStatus === 'default'
+            ? classes.buttonActive
+            : classes.buttonNonActive
+        }
         onClick={() => {
           changePool('default');
         }}
