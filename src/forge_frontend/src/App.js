@@ -1,13 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import Web3 from 'web3';
 import classes from './App.module.css';
+import sclasses from './components/Staking.module.css'
 import TestToken from '../src/abis/TestToken.json';
 import TokenStaking from '../src/abis/TokenStaking.json';
 import Staking from './components/Staking';
 import AdminTesting from './components/AdminTesting';
 
 const App = () => {
-  const [account, setAccount] = useState('Connecting to ICP..');
+  // const [account, setAccount] = useState('Connecting to ICP..');
+  const [account, setAccount] =useState( <button
+    className={sclasses.stakeButton}
+    id="login"
+  >
+    Login with Internet Identity
+  </button>);
   const [network, setNetwork] = useState({ id: '0', name: 'none' });
   const [testTokenContract, setTestTokenContract] = useState('');
   const [tokenStakingContract, setTokenStakingContract] = useState('');
