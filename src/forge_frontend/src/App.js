@@ -1,363 +1,210 @@
-import React, { useState, useEffect } from 'react';
-import Web3 from 'web3';
-import classes from './App.module.css';
-import sclasses from './components/Staking.module.css'
-import TestToken from '../src/abis/TestToken.json';
-import TokenStaking from '../src/abis/TokenStaking.json';
-import Staking from './components/Staking';
-import AdminTesting from './components/AdminTesting';
+import React, { useState, useEffect } from "react";
+import { HttpAgent, Actor } from "@dfinity/agent";
+import { idlFactory } from "./declarations/your_contract";
+import { AuthClient } from "@dfinity/auth-client";
 
-const App = () => {
-  // const [account, setAccount] = useState('Connecting to ICP..');
-  const [account, setAccount] =useState( <button
-    className={sclasses.stakeButton}
-    id="login"
-  >
-    Login with Internet Identity
-  </button>);
-  const [network, setNetwork] = useState({ id: '0', name: 'none' });
-  const [testTokenContract, setTestTokenContract] = useState('');
-  const [tokenStakingContract, setTokenStakingContract] = useState('');
-  const [inputValue, setInputValue] = useState('');
-  const [contractBalance, setContractBalance] = useState('0');
-  const [totalStaked, setTotalStaked] = useState([0, 0]);
-  const [myStake, setMyStake] = useState([0, 0]);
-  const [appStatus, setAppStatus] = useState(true);
-  const [loader, setLoader] = useState(false);
-  const [userBalance, setUserBalance] = useState('0');
-  const [apy, setApy] = useState([0, 0]);
+const StakingDapp = () => {
+  const [network, setNetwork] = useState("Testnet");
+  const [address, setAddress] = useState("");
+  const [publicKey, setPublicKey] = useState(null);
+  const [balance, setBalance] = useState(null);
+  const [utxos, setUtxos] = useState([]);
+  const [fee, setFee] = useState(null);
+  const [transaction, setTransaction] = useState(null);
+  const [sendRequest, setSendRequest] = useState({
+    destination_address: "",
+    amount_in_satoshi: 0,
+    fee: 0,
+  });
 
-  useEffect(() => {
-    //connecting to ethereum blockchain
-    const ethEnabled = async () => {
-      fetchDataFromBlockchain();
-    };
+  const agent = new HttpAgent({ host: "https://ic0.app" });
+  const contractActor = Actor.createActor(idlFactory, {
+    agent,
+    canisterId: "your-canister-id",
+  });
 
-    ethEnabled();
-  }, []);
-
-
-
-  const fetchDataFromBlockchain = async () => {
-    if (window.ethereum) {
-      // await window.ethereum.send('eth_requestAccounts');
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      window.web3 = new Web3(window.ethereum);
-
-      //connecting to metamask
-      let web3 = window.web3;
-      const accounts = await web3.eth.getAccounts();
-      setAccount(accounts[0]);
-
-      //loading users network ID and name
-      const networkId = await web3.eth.net.getId();
-      const networkType = await web3.eth.net.getNetworkType();
-      setNetwork({ ...network, id: networkId, name: networkType });
-
-      //loading TestToken contract data
-      const testTokenData = TestToken.networks[networkId];
-      if (testTokenData) {
-        let web3 = window.web3;
-        const testToken = new web3.eth.Contract(
-          TestToken.abi,
-          testTokenData.address
-        );
-        setTestTokenContract(testToken);
-        //  fetching balance of Testtoken and storing in state
-        let testTokenBalance = await testToken.methods
-          .balanceOf(accounts[0])
-          .call();
-        let convertedBalance = window.web3.utils.fromWei(
-          testTokenBalance.toString(),
-          'Ether'
-        );
-        setUserBalance(convertedBalance);
-
-        //fetching contract balance
-        //updating total staked balance
-        const tempBalance = TokenStaking.networks[networkId];
-        let totalStaked = await testToken.methods
-          .balanceOf(tempBalance.address)
-          .call();
-
-        convertedBalance = window.web3.utils.fromWei(
-          totalStaked.toString(),
-          'Ether'
-        );
-        //removing initial balance
-        setContractBalance(convertedBalance);
-      } else {
-        setAppStatus(false);
-        window.alert(
-          'TestToken contract is not deployed on this network, please change to testnet'
-        );
-      }
-
-      //loading TokenStaking contract data
-      const tokenStakingData = TokenStaking.networks[networkId];
-
-      if (tokenStakingData) {
-        let web3 = window.web3;
-        const tokenStaking = new web3.eth.Contract(
-          TokenStaking.abi,
-          tokenStakingData.address
-        );
-        setTokenStakingContract(tokenStaking);
-        //  fetching total staked TokenStaking  and storing in state
-        let myStake = await tokenStaking.methods
-          .stakingBalance(accounts[0])
-          .call();
-
-        let convertedBalance = window.web3.utils.fromWei(
-          myStake.toString(),
-          'Ether'
-        );
-
-        let myCustomStake = await tokenStaking.methods
-          .customStakingBalance(accounts[0])
-          .call();
-
-        let tempCustomdBalance = window.web3.utils.fromWei(
-          myCustomStake.toString(),
-          'Ether'
-        );
-
-        setMyStake([convertedBalance, tempCustomdBalance]);
-
-        //checking totalStaked
-        let tempTotalStaked = await tokenStaking.methods.totalStaked().call();
-        convertedBalance = window.web3.utils.fromWei(
-          tempTotalStaked.toString(),
-          'Ether'
-        );
-        let tempcustomTotalStaked = await tokenStaking.methods
-          .customTotalStaked()
-          .call();
-        let tempconvertedBalance = window.web3.utils.fromWei(
-          tempcustomTotalStaked.toString(),
-          'Ether'
-        );
-        setTotalStaked([convertedBalance, tempconvertedBalance]);
-
-        //fetching APY values from contract
-        let tempApy =
-          ((await tokenStaking.methods.defaultAPY().call()) / 1000) * 365;
-        let tempcustomApy =
-          ((await tokenStaking.methods.customAPY().call()) / 1000) * 365;
-        setApy([tempApy, tempcustomApy]);
-      } else {
-        setAppStatus(false);
-        window.alert(
-          'TokenStaking contract is not deployed on this network, please change to testnet'
-        );
-      }
-
-      //removing loader
-      setLoader(false);
-    } else if (!window.web3) {
-      setAppStatus(false);
-      setAccount('Metamask is not detected');
-      setLoader(false);
+  const fetchBitcoinAddress = async () => {
+    try {
+      const result = await contractActor.get_address(network, "test_key_1", []);
+      setAddress(result);
+    } catch (error) {
+      console.error("Error fetching address:", error);
     }
   };
 
-  const inputHandler = (received) => {
-    setInputValue(received);
-  };
-
-
-
-  const stakeHandler = () => {
-    if (!appStatus) {
-    } else {
-      if (!inputValue || inputValue === '0' || inputValue < 0) {
-        setInputValue('');
-      } else {
-        setLoader(true);
-        let convertToWei = window.web3.utils.toWei(inputValue, 'Ether');
-
-        //aproving tokens for spending
-        testTokenContract.methods
-          .approve(tokenStakingContract._address, convertToWei)
-          .send({ from: account })
-          .on('transactionHash', (hash) => {
-            // if (page === 1) {
-              tokenStakingContract.methods
-                .stakeTokens(convertToWei)
-                .send({ from: account })
-                .on('transactionHash', (hash) => {
-                  setLoader(false);
-                  fetchDataFromBlockchain();
-                })
-                .on('receipt', (receipt) => {
-                  setLoader(false);
-                  fetchDataFromBlockchain();
-                })
-                .on('confirmation', (confirmationNumber, receipt) => {
-                  setLoader(false);
-                  fetchDataFromBlockchain();
-                });
-          })
-          .on('error', function(error) {
-            setLoader(false);
-            console.log('Error Code:', error.code);
-            console.log(error.message);
-          });
-        setInputValue('');
-      }
+  const fetchECDSAPublicKey = async () => {
+    try {
+      const result = await contractActor.get_ecdsa_public_key(
+        "test_key_1",
+        []
+      );
+      setPublicKey(result);
+    } catch (error) {
+      console.error("Error fetching ECDSA public key:", error);
     }
   };
 
-  const unStakeHandler = () => {
-    if (!appStatus) {
-    } else {
-      setLoader(true);
-
-      // let convertToWei = window.web3.utils.toWei(inputValue, 'Ether')
-      // if (page === 1) {
-        tokenStakingContract.methods
-          .unstakeTokens()
-          .send({ from: account })
-          .on('transactionHash', (hash) => {
-            setLoader(false);
-            fetchDataFromBlockchain();
-          })
-          .on('receipt', (receipt) => {
-            setLoader(false);
-            fetchDataFromBlockchain();
-          })
-          .on('confirmation', (confirmationNumber, receipt) => {
-            setLoader(false);
-            fetchDataFromBlockchain();
-          })
-          .on('error', function(error) {
-            console.log('Error Code:', error.code);
-            console.log(error.message);
-            setLoader(false);
-          });
-
-        setInputValue('');
-     
+  const fetchBalance = async () => {
+    try {
+      const result = await contractActor.get_balance(address);
+      setBalance(result);
+    } catch (error) {
+      console.error("Error fetching balance:", error);
     }
   };
 
-  const redistributeRewards = async () => {
-    if (!appStatus) {
-    } else {
-      setLoader(true);
-      tokenStakingContract.methods
-        .redistributeRewards()
-        .send({ from: account })
-        .on('transactionHash', (hash) => {
-          setLoader(false);
-          fetchDataFromBlockchain();
-        })
-        .on('receipt', (receipt) => {
-          setLoader(false);
-          fetchDataFromBlockchain();
-        })
-        .on('confirmation', (confirmationNumber, receipt) => {
-          setLoader(false);
-          fetchDataFromBlockchain();
-        })
-        .on('error', function(error) {
-          console.log('Error Code:', error.code);
-          console.log(error.code);
-          setLoader(false);
-        });
+  const fetchUTXOs = async () => {
+    try {
+      const result = await contractActor.get_utxos(network, address);
+      setUtxos(result);
+    } catch (error) {
+      console.error("Error fetching UTXOs:", error);
     }
   };
 
-  // const redistributeCustomRewards = async () => {
-  //   if (!appStatus) {
-  //   } else {
-  //     setLoader(true);
-  //     tokenStakingContract.methods
-  //       .customRewards()
-  //       .send({ from: account })
-  //       .on('transactionHash', (hash) => {
-  //         setLoader(false);
-  //         fetchDataFromBlockchain();
-  //       })
-  //       .on('receipt', (receipt) => {
-  //         setLoader(false);
-  //         fetchDataFromBlockchain();
-  //       })
-  //       .on('confirmation', (confirmationNumber, receipt) => {
-  //         setLoader(false);
-  //         fetchDataFromBlockchain();
-  //       })
-  //       .on('error', function(error) {
-  //         console.log('Error Code:', error.code);
-  //         console.log(error.code);
-  //         setLoader(false);
-  //       });
-  //   }
-  // };
+  const fetchFee = async () => {
+    try {
+      const result = await contractActor.get_fee_per_byte(network);
+      setFee(result);
+    } catch (error) {
+      console.error("Error fetching fee:", error);
+    }
+  };
 
-  const claimTst = async () => {
-    if (!appStatus) {
-    } else {
-      setLoader(true);
-      tokenStakingContract.methods
-        .claimTst()
-        .send({ from: account })
-        .on('transactionHash', (hash) => {
-          setLoader(false);
-          fetchDataFromBlockchain();
-        })
-        .on('receipt', (receipt) => {
-          setLoader(false);
-          fetchDataFromBlockchain();
-        })
-        .on('confirmation', (confirmationNumber, receipt) => {
-          setLoader(false);
-          fetchDataFromBlockchain();
-        })
-        .on('error', function(error) {
-          console.log('Error Code:', error.code);
-          console.log(error.code);
-          setLoader(false);
-        });
+  const buildTransaction = async () => {
+    try {
+      const { destination_address, amount_in_satoshi, fee } = sendRequest;
+      const result = await contractActor.build_transaction_with_fee(
+        utxos,
+        address,
+        destination_address,
+        amount_in_satoshi,
+        fee
+      );
+      setTransaction(result);
+    } catch (error) {
+      console.error("Error building transaction:", error);
+    }
+  };
+
+  const sendTransaction = async () => {
+    try {
+      await contractActor.send_transaction(network, transaction);
+      alert("Transaction sent successfully!");
+    } catch (error) {
+      console.error("Error sending transaction:", error);
     }
   };
 
   return (
-    <div className={classes.Grid}>
-      {loader ? 
-      <div className={classes.curtain}></div> 
-      : null}
-      <div className={classes.loader}></div>
-      <div className={classes.Child}>
-      {/* <Navigation changePage={changePage} />
-        <Navigation apy={apy} changePage={changePage} /> */}
-        <div>
-          <Staking
-            account={account}
-            totalStaked={totalStaked[0]}
-            myStake={ myStake[0]}
-            userBalance={userBalance}
-            unStakeHandler={unStakeHandler}
-            stakeHandler={stakeHandler}
-            inputHandler={inputHandler}
-            apy={apy[0]}
-          />
-        </div>
-        <div className={classes.for_testing}>
-          <AdminTesting
-            network={network}
-            tokenStakingContract={tokenStakingContract}
-            contractBalance={contractBalance}
-            redistributeRewards={
-              redistributeRewards
-            }
-            claimTst={claimTst}
-            // page={page}
-          />
-        </div>
-      </div>
+    <div style={{ padding: "20px" }}>
+      <h1>ICP Bitcoin Wallet</h1>
+
+      <section>
+        <h2>Network Selection</h2>
+        <select
+          value={network}
+          onChange={(e) => setNetwork(e.target.value)}
+        >
+          <option value="Mainnet">Mainnet</option>
+          <option value="Testnet">Testnet</option>
+          <option value="Regtest">Regtest</option>
+        </select>
+      </section>
+
+      <section>
+        <h2>Bitcoin Address</h2>
+        <button onClick={fetchBitcoinAddress}>Fetch Address</button>
+        {address && <p>Address: {address}</p>}
+      </section>
+
+      <section>
+        <h2>ECDSA Public Key</h2>
+        <button onClick={fetchECDSAPublicKey}>Fetch Public Key</button>
+        {publicKey && <pre>{JSON.stringify(publicKey, null, 2)}</pre>}
+      </section>
+
+      <section>
+        <h2>Balance</h2>
+        <button onClick={fetchBalance}>Fetch Balance</button>
+        {balance !== null && <p>Balance: {balance} satoshi</p>}
+      </section>
+
+      <section>
+        <h2>UTXOs</h2>
+        <button onClick={fetchUTXOs}>Fetch UTXOs</button>
+        {utxos.length > 0 && (
+          <pre>{JSON.stringify(utxos, null, 2)}</pre>
+        )}
+      </section>
+
+      <section>
+        <h2>Fee Estimation</h2>
+        <button onClick={fetchFee}>Fetch Fee</button>
+        {fee && <p>Fee per byte: {fee} millisatoshi</p>}
+      </section>
+
+      <section>
+        <h2>Send Bitcoin</h2>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            buildTransaction();
+          }}
+        >
+          <label>
+            Destination Address:
+            <input
+              type="text"
+              value={sendRequest.destination_address}
+              onChange={(e) =>
+                setSendRequest({
+                  ...sendRequest,
+                  destination_address: e.target.value,
+                })
+              }
+            />
+          </label>
+          <br />
+          <label>
+            Amount (satoshi):
+            <input
+              type="number"
+              value={sendRequest.amount_in_satoshi}
+              onChange={(e) =>
+                setSendRequest({
+                  ...sendRequest,
+                  amount_in_satoshi: parseInt(e.target.value, 10),
+                })
+              }
+            />
+          </label>
+          <br />
+          <label>
+            Fee (satoshi):
+            <input
+              type="number"
+              value={sendRequest.fee}
+              onChange={(e) =>
+                setSendRequest({
+                  ...sendRequest,
+                  fee: parseInt(e.target.value, 10),
+                })
+              }
+            />
+          </label>
+          <br />
+          <button type="submit">Build Transaction</button>
+        </form>
+        {transaction && (
+          <>
+            <pre>{JSON.stringify(transaction, null, 2)}</pre>
+            <button onClick={sendTransaction}>Send Transaction</button>
+          </>
+        )}
+      </section>
     </div>
   );
 };
 
-export default App;
+export default StakingDapp;
